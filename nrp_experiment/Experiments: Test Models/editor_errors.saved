@@ -1,0 +1,236 @@
+{"data":{"TF":[{"id":"test_coordinates","name":"test_coordinates","code":"# Imported Python Transfer Function
+@MapVariable("coordinates",initial_value = (160.,120.),scope = nrp.GLOBAL) 
+@nrp.Robot2Neuron()
+def test_coordinates(t,coordinates):
+    return
+    time = t % 20  
+    if time > 15: 
+        coordinates.value = (130.,200.) 
+    if time > 10:
+        coordinates.value = (250.,200.) 
+        return 
+    if time > 5:
+        coordinates.value = (250,80.) 
+        return 
+    if time > 0:
+        coordinates.value = (130,80)
+        return
+        ","dirty":false,"local":false,"error":{},"regex":"^\\b(?!\\btilt_eye\\b|\\beye_version\\b|\\bmove_target\\b|\\bcsv_spike_monitor\\b|\\ball_neurons_monitor\\b|\\bcheck_screen\\b)([A-z_]+[\\w_]*)$","buttonTextTF":"Enabled","editorsOptions":{"lineWrapping":true,"lineNumbers":true,"readOnly":false,"indentUnit":4,"mode":"text/x-python"},"enabledApplyButton":true},{"id":"tilt_eye","name":"tilt_eye","code":"# Imported Python Transfer Function
+from std_msgs.msg import Float64
+@nrp.MapVariable("coordinates",  scope = nrp.GLOBAL )
+@nrp.Neuron2Robot(Topic('/robot/eye_tilt/pos', Float64))
+def tilt_eye(t, coordinates): 
+    tf = hbp_nrp_cle.tf_framework.tf_lib
+    x,y = coordinates.value
+    x_a,y_a = tf.cam.pixel2angle(x,y)
+    def deg2rad(deg):
+        "
+        Degrees16 to radians conversion function.
+        :param deg: value in degrees
+        :return: value of deg in radians
+        "
+        return (float(deg) / 360.) * (2. * np.pi)
+    return deg2rad(y_a)
+    ","dirty":false,"local":false,"error":{},"regex":"^\\b(?!\\btest_coordinates\\b|\\beye_version\\b|\\bmove_target\\b|\\bcsv_spike_monitor\\b|\\ball_neurons_monitor\\b|\\bcheck_screen\\b)([A-z_]+[\\w_]*)$","buttonTextTF":"Enabled","editorsOptions":{"lineWrapping":true,"lineNumbers":true,"readOnly":false,"indentUnit":4,"mode":"text/x-python"},"enabledApplyButton":true},{"id":"eye_version","name":"eye_version","code":"# Imported Python Transfer Function
+from std_msgs.msg import Float64
+@nrp.MapVariable("coordinates",  scope = nrp.GLOBAL )
+@nrp.Neuron2Robot(Topic('/robot/eye_version/pos', Float64))
+def eye_version(t,coordinates):
+    tf = hbp_nrp_cle.tf_framework.tf_lib
+    x,y = coordinates.value
+    def deg2rad(deg):
+        "
+        Degrees to radians conversion function.
+        :param deg: value in degrees
+        :return: value of deg in radians
+        "
+        return (float(deg) / 360.) * (2. * np.pi)
+    x_a,y_a = tf.cam.pixel2angle(x, y)
+    return deg2rad(x_a)
+    ##
+","dirty":false,"local":false,"error":{},"regex":"^\\b(?!\\btest_coordinates\\b|\\btilt_eye\\b|\\bmove_target\\b|\\bcsv_spike_monitor\\b|\\ball_neurons_monitor\\b|\\bcheck_screen\\b)([A-z_]+[\\w_]*)$","buttonTextTF":"Enabled","editorsOptions":{"lineWrapping":true,"lineNumbers":true,"readOnly":false,"indentUnit":4,"mode":"text/x-python"},"enabledApplyButton":true},{"id":"move_target","name":"move_target","code":"# Imported Python Transfer Function
+#
+from gazebo_msgs.srv import SetModelState
+import rospy
+rospy.wait_for_service("/gazebo/set_model_state")
+service_proxy = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState, persistent=True)
+@nrp.MapCSVRecorder("recorder", filename="test_labels.csv", headers=["name", "top_left","top_right","bottom_left","bottom_right"])
+@nrp.MapVariable("counter", initial_value = 0)
+@nrp.MapVariable("top_right", initial_value={'x': 0.4, 'y': 1.38, 'z': 1.3})
+@nrp.MapVariable("top_left", initial_value={'x': -0.4, 'y': 1.38, 'z': 1.3})
+@nrp.MapVariable("bottom_right", initial_value={'x': 0.4, 'y': 1.38, 'z': 0.8})
+@nrp.MapVariable("bottom_left", initial_value={'x': -0.4, 'y': 1.38, 'z': 0.8})
+@nrp.MapVariable("last_positions", initial_value = [0,1,2,3] )
+@nrp.MapVariable("last_color",     initial_value = [0,0,0,0] ) 
+@nrp.MapVariable("last_t",     initial_value = 0.0 ) 
+@nrp.MapVariable("dropout",     initial_value = [True,True,True,True] ) 
+#@nrp.MapVariable("scaling",  initial_vale = [1.0, 1.0, 1.0, 1.0] ) 
+#variance: (position_number = 4 * (x,y,z) 3) list 
+@nrp.MapVariable("variance",  initial_value = [  0.0, 0.0, 
+                                                0.0, 0.0, 
+                                                0.0, 0.0, 
+                                                0.0, 0.0] ) 
+                                                #@nrp.MapVariable("tr_var", initial_value={'x': 0.0, 'y':0.0, 'z': 0.0})
+#@nrp.MapVariable("tl_var", initial_value={'x': 0.0, 'y':0.0, 'z': 0.0})
+#@nrp.MapVariable("br_var", initial_value={'x': 0.0, 'y':0.0, 'z': 0.0})
+#@nrp.MapVariable("bl_var", initial_value={'x': 0.0, 'y':0.0, 'z': 0.0})
+@nrp.MapVariable("set_model_state_srv", initial_value=service_proxy)
+@nrp.MapVariable("phase", initial_value = None)
+@nrp.MapVariable("bridge", initial_value = None)
+@nrp.MapRobotSubscriber("camera", Topic('/icub_model/left_eye_camera/image_raw', sensor_msgs.msg.Image))
+@nrp.Robot2Neuron() # dummy R2N
+def move_target(t, recorder, counter, top_right , top_left , bottom_right , bottom_left , last_positions, last_color, last_t, dropout,variance, camera, bridge, phase, set_model_state_srv):
+    import random 
+    from PIL import Image
+    dropout_probability = 0.25 
+    forms = ["Circle","Diamond","Square","Triangle"]
+    colors = ["Green","Red","Blue","White"] 
+    top_right = top_right.value
+    top_left = top_left.value
+    bottom_right = bottom_right.value
+    bottom_left = bottom_left.value
+    positions = [top_left,top_right, bottom_left,bottom_right]
+    #setting orientation since game 
+    form_orientation_dict = {
+    "Triangle": {"x":0.70710678118, "y":0, "z":0, "w":0.70710678118},
+    "Circle" :  {"x":0.70710678118, "y":0, "z":0, "w":0.70710678118},
+    "Square" :  {"x":0, "y":0, "z":0, "w":0}, 
+    "Diamond":  {"x": 0, "y":0.38268343236, "z":0, "w":0.9}
+    }
+    form_c_dict = {
+    "Triangle": {},
+    "Circle" :  {},
+    "Square" :  {}, 
+    "Diamond":  {}
+    }   
+    for form in forms: 
+        orientation = form_orientation_dict[form]
+        for color in colors: 
+            form_c_dict[form][color] = gazebo_msgs.msg.ModelState()
+            form_c_dict[form][color].model_name = form + "_" + color
+            form_c_dict[form][color].scale.x = form_c_dict[form][color].scale.y = form_c_dict[form][color].scale.z = 1.0
+            # reference frame
+            form_c_dict[form][color].reference_frame = 'world'
+            #orientation
+            form_c_dict[form][color].pose.orientation.x = orientation["x"]
+            form_c_dict[form][color].pose.orientation.y = orientation["y"]
+            form_c_dict[form][color].pose.orientation.z = orientation["z"]
+            form_c_dict[form][color].pose.orientation.w = orientation["w"]
+            #set default pose
+            form_c_dict[form][color].pose.position.x = 0
+            form_c_dict[form][color].pose.position.y = 4
+            form_c_dict[form][color].pose.position.z = 0
+    if(t > 5.0 and phase.value is None):
+        phase.value = "SET"
+    #random a new combination of forms as well as their pos variance and dropout    
+    if(phase.value == "SET" and t > last_t.value + 30.0):
+        random.shuffle(last_positions.value) 
+        last_c =  random.sample(range(4),4) 
+        last_color.value = last_c
+        dropout.value = [(random.random() > dropout_probability) for i in range(4)]
+        last_t.value = t
+        var = [0.08 * random.random() -0.04 for i in range(8)] 
+        variance.value = var 
+    else: 
+        last_c = last_color.value
+        var = variance.value
+    #this has to be re-done
+    for i in range(4): 
+        if dropout.value[i]:
+            chosen_color =  colors[3] # for bw only white [last_c[i]]
+            position = positions [ last_positions.value[i]]
+            chosen_form = forms[i]
+            readjust = (0,0) if i<3 else (-0.1,0.15) 
+            form_c_dict[chosen_form][chosen_color].pose.position.x = position["x"] + var[i] + readjust[0]
+            form_c_dict[chosen_form][chosen_color].pose.position.y = position["y"] + readjust[1]
+            form_c_dict[chosen_form][chosen_color].pose.position.z = position["z"] + var[i+2]
+    #call service
+    for form in forms: 
+        for color in colors: 
+            response = set_model_state_srv.value(form_c_dict[form][color])
+          #check response        
+            if not response.success: 
+                clientLogger.info(response.status_message)
+                #
+","dirty":false,"local":false,"error":{},"regex":"^\\b(?!\\btest_coordinates\\b|\\btilt_eye\\b|\\beye_version\\b|\\bcsv_spike_monitor\\b|\\ball_neurons_monitor\\b|\\bcheck_screen\\b)([A-z_]+[\\w_]*)$","buttonTextTF":"Enabled","enabledApplyButton":true,"editorsOptions":{"lineWrapping":true,"lineNumbers":true,"readOnly":false,"indentUnit":4,"mode":"text/x-python"}},{"id":"csv_spike_monitor","name":"csv_spike_monitor","code":"# Imported Python Transfer Function
+@nrp.MapCSVRecorder("recorder", filename="all_spikes.csv", headers=["id", "time"])
+@nrp.MapSpikeSink("record_neurons", nrp.brain.record, nrp.spike_recorder)
+@nrp.Neuron2Robot(Topic('/monitor/spike_recorder', cle_ros_msgs.msg.SpikeEvent))
+def csv_spike_monitor(t, recorder, record_neurons):
+    for i in range(0, len(record_neurons.times)):
+        recorder.record_entry(
+            record_neurons.times[i][0],
+            record_neurons.times[i][1]
+        )
+        ","dirty":false,"local":false,"error":{},"regex":"^\\b(?!\\btest_coordinates\\b|\\btilt_eye\\b|\\beye_version\\b|\\bmove_target\\b|\\ball_neurons_monitor\\b|\\bcheck_screen\\b)([A-z_]+[\\w_]*)$","buttonTextTF":"Enabled","enabledApplyButton":true,"editorsOptions":{"lineWrapping":true,"lineNumbers":true,"readOnly":false,"indentUnit":4,"mode":"text/x-python"}},{"id":"all_neurons_monitor","name":"all_neurons_monitor","code":"# Imported Python Transfer Function
+@nrp.NeuronMonitor(nrp.brain.record, nrp.spike_recorder)
+def all_neurons_monitor(t):
+    return True
+    ##
+","dirty":false,"local":false,"error":{},"regex":"^\\b(?!\\btest_coordinates\\b|\\btilt_eye\\b|\\beye_version\\b|\\bmove_target\\b|\\bcsv_spike_monitor\\b|\\bcheck_screen\\b)([A-z_]+[\\w_]*)$","buttonTextTF":"Enabled","enabledApplyButton":true,"editorsOptions":{"lineWrapping":true,"lineNumbers":true,"readOnly":false,"indentUnit":4,"mode":"text/x-python"}},{"id":"check_screen","name":"check_screen","code":"# Imported Python Transfer Function
+@nrp.MapRobotSubscriber("camera", Topic('/icub_model/left_eye_camera/image_raw', sensor_msgs.msg.Image))
+@nrp.MapVariable("bridge", initial_value=None)
+
+@nrp.MapVariable("coordinates",scope = nrp.GLOBAL) 
+@nrp.Robot2Neuron()
+def check_screen(t,camera, coordinates,bridge):
+    #log the first timestep (20ms), each couple of seconds
+    # import TensorFlow in the NRP, update this path for your local installation
+    directory_path = "/home/julius/models/"
+    try:
+        import site
+        site.addsitedir('/home/julius/tensorflow/lib/python2.7/site-packages')
+        import tensorflow as tf
+    except:
+        clientLogger.info("Unable to import TensorFlow, did you change the path in the transfer function?")
+        raise
+    import sys 
+    sys.path.insert(0, "/home/julius/models/fw_network")
+    sys.path.insert(0, "/home/julius/models/bw_network") 
+    from forward_model import ventral_feed_forward
+    from backward_model_direction import ventral_feed_backward
+    #paths of the trained models
+    fw_model_dir = directory_path + "nrp_forward_bw/"
+    bckw_model_dir = directory_path + "nrp_backward_bw/"
+    
+    forward_estimator =  tf.estimator.Estimator(model_fn = ventral_feed_forward,  model_dir = fw_model_dir)
+    backward_estimator = tf.estimator.Estimator(model_fn = ventral_feed_backward, model_dir = bckw_model_dir)
+    #take image and preprocess
+    import numpy as np 
+    from cv_bridge import CvBridge, CvBridgeError   
+    bridge.value = CvBridge()
+    # no image received yet, do nothing\
+    
+    if camera.value is None:
+        return
+    # convert the ROS image to an OpenCV image and Numpy array\
+    
+    cv_image = bridge.value.imgmsg_to_cv2(camera.value, "mono8")
+    image = cv_image[:,50:290]
+    clientLogger.info(image.shape) 
+    cue = [1,0,0,0] 
+    forward_fn = tf.estimator.inputs.numpy_input_fn(
+      x= {"x": image, "cues":cue},  # [1,240,240,1] 
+      y= None,
+      num_epochs= 1,
+      shuffle=False)
+    try: 
+    \tpredict = forward_estimator.predict(input_fn=forward_fn)
+        clientLogger.info(type(predict)) 
+        forward_output = list(next(predict)) 
+    except : 
+        #clientLogger.info("couldnt predict", sys.exc_info()[0]) 
+    \traise 
+    
+    
+    #clientLogger.info(forward_output["classes"]) 
+    backward_fn = tf.estimator.inputs.numpy_input_fn(
+      x = forward_output, #output of forward layers
+      y = None,
+      batch_size = 1,
+      num_epochs = 1,
+      shuffle = False)
+    backward_output = list(backward_estimator.predict(input_fn = backward_fn))[0] 
+     #"top_left" : 0,         "top_right" : 1,        "bottom_left" : 2,        "bottom_right" :3
+    location_dict = [(130,80),(250,80.) , (130.,200.) , (250.,200.)]
+    ","dirty":false,"local":false,"error":{"Runtime":{"lineText":"","functionName":"check_screen","errorType":"Runtime","offset":-1,"fileName":"","sourceType":"Transfer Function","lineNumber":49,"message":"'list' object has no attribute 'shape'","severity":1,"lineHandle":48}},"regex":"^\\b(?!\\btest_coordinates\\b|\\btilt_eye\\b|\\beye_version\\b|\\bmove_target\\b|\\bcsv_spike_monitor\\b|\\ball_neurons_monitor\\b)([A-z_]+[\\w_]*)$","buttonTextTF":"Enabled","editorsOptions":{"lineWrapping":true,"lineNumbers":true,"readOnly":false,"indentUnit":4,"mode":"text/x-python"},"enabledApplyButton":true}]},"__owner_id":"default-owner"}
