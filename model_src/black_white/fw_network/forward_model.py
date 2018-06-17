@@ -6,19 +6,14 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 import cv2
-
-
-
-
 import csv
-
-#from print_layers import print_activation_dict,tensor_to_colour
 from cue_weights import  init_all_weights
 from layers import v1_layer, v2_layer_cue, v4_layer_cue, PIT_layer_cue #, AIT_layer
-tf.logging.set_verbosity(tf.logging.INFO)
+
+
+
 
 # Our application logic will be added here
-
 def ventral_feed_forward(features, labels, mode):
 #==========================================================================================
 ####### weights and biases described in v_layers_weights
