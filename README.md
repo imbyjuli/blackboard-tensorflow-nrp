@@ -38,6 +38,29 @@ The experiment will automatically take pictures of the screen with random shape 
 This may take a while. This step removes noise from the train images (all pixel values below a certain threshold). If this is not desired, set the threshold in function *highpass_filter* to 0. 
 
 ## Train Network
+### Train Forward Network 
+After preparing the datasets, go into *model_src/WANTED_COLOUR_MODE/fw_network*. Here open the file *train_forward_network.py*. Edit the dir strings as described. Afterwards run the script by entering. Here you can aslo edit training parameters such as iterations and batch size. 
 
+```
+python train_forward_network.py
+```
+while in the directory. Now the network should start to train. 
+
+###Train Backward Network 
+After the forward network is done training, by opening the script *create_backward_dataset.py*, filling the asked for strings for the dataset and trained model directorys and after running in by entering 
+```
+python create_backward_dataset.py
+```
+in the console. 
+This will create a pickle file in the parent directory, with predicted data and the layer output of each run. 
+With this data the backward network is trained: 
+1. Navigate to the backward network source folder *../bw_network*. 
+2. now open the file *train_backward_network* and edit the asked for directory string. 
+3. run the script 
+```
+python train_backward_network.py
+```
+###Use newly train Network. 
+Edit the respective strings in the transfer function of the prediction experiment, to point towards your newly trained models. 
 
 
