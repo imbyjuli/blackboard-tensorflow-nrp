@@ -46,7 +46,7 @@ python train_forward_network.py
 ```
 while in the directory. Now the network should start to train. 
 
-###Train Backward Network 
+### Train Backward Network 
 After the forward network is done training, by opening the script *create_backward_dataset.py*, filling the asked for strings for the dataset and trained model directorys and after running in by entering 
 ```
 python create_backward_dataset.py
@@ -60,7 +60,7 @@ With this data the backward network is trained:
 ```
 python train_backward_network.py
 ```
-###Use newly train Network. 
+### Use newly train Network. 
 Edit the respective strings in the transfer function of the prediction experiment, to point towards your newly trained models. 
 
 
